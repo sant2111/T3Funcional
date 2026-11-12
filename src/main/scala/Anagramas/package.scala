@@ -5,7 +5,15 @@ package object Anagramas {
   type Frase = List[Palabra]
   type Ocurrencias = List[(Char, Int)]
 
-  val diccionario: List[Palabra] = List("cosas", "como", "yo", "y", "ocasos", "cayo", "mocosos", "roca", "moco", "sos")
+  val diccionario: List[Palabra] = List(
+    "cosas", "como", "yo", "y", "ocasos", "cayo", "mocosos", "roca", "moco", "sos",
+    "ostra", "astro", "ratos", "rotas",
+    "trapo", "parto", "opta", "pato", "topa", "potra",
+    "arco", "caro", "cora",
+    "amor", "roma", "mora", "ramo",
+    "caso", "saco", "cosa",
+    "la", "al", "es", "se", "el", "le", "sol", "los"
+  )
 
   def lOcPal(p: Palabra): Ocurrencias = {
     p.toLowerCase.groupBy(identity).map { case(c, str) => (c, str.length) }.toList.sortBy(_._1)
@@ -33,34 +41,43 @@ package object Anagramas {
 
   def complemento(lOc: Ocurrencias, slOc: Ocurrencias): Ocurrencias = {
     @tailrec
-    def aux(l1: Ocurrencias, l2: Ocurrencias, acc: Ocurrencias): Ocurrencias = {
+    def descontarOc(l1: Ocurrencias, l2: Ocurrencias, acc: Ocurrencias): Ocurrencias = {
       (l1, l2) match {
         case (Nil, _) => acc.reverse
         case (resto, Nil) => acc.reverse ++ resto
         case ((c1, n1) :: t1, (c2, n2)::t2) =>
           if (c1 == c2) {
             val diff = n1 - n2
-            if (diff > 0) aux(t1, t2, (c1, diff)::acc)
-            else aux(t1, t2, acc)
+            if (diff > 0) descontarOc(t1, t2, (c1, diff)::acc)
+            else descontarOc(t1, t2, acc)
           } else if (c1 < c2) {
-            aux(t1, l2, (c1, n1)::acc)
+            descontarOc(t1, l2, (c1, n1)::acc)
           } else {
-            aux(l1, t2,acc)
+            descontarOc(l1, t2,acc)
           }
       }
     }
-    aux(lOc, slOc, Nil)
+    descontarOc(lOc, slOc, Nil)
   }
 
 
   def anagramasDePalabra(palabra: Palabra): List[Palabra] = {
-    //  Persona 2 usar diccionarioPorOcurrencias y lOcPal
-    ???
+    diccionarioPorOcurrencias.getOrElse(lOcPal(palabra), Nil)
   }
 
 
   def anagramasDeFrase(sentence: Frase): List[Frase] = {
-    //  Persona 2 usar expresiones for, combinaciones, complemento y diccionarioPorOcurrencias
-    ???
+    def anagramasDeOc(lOc: Ocurrencias): List[Frase] = {
+      if (lOc.isEmpty) List(Nil)
+      else {
+        for {comb <- combinaciones(lOc)
+            if comb.nonEmpty
+            vocablo <- diccionarioPorOcurrencias.getOrElse(comb, Nil)
+            restoFrase <- anagramasDeOc(complemento(lOc, comb))
+        }yield vocablo :: restoFrase
+      }
+    }
+    
+    anagramasDeOc(lOcFrase(sentence))
   }
 }
